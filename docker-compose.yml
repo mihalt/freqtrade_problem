@@ -1,0 +1,22 @@
+services:
+  freqtrade_webserver2:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    command: >
+      freqtrade webserver
+
+  freqtrade_dev2:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+      - "./exchange_utils.py:/freqtrade/exchange/exchange_utils.py"
+
+    command: >
+      freqtrade backtesting
+      --config /freqtrade/user_data/config.json
+      --strategy MyStrategy
+      --timerange=20240101-20250707
