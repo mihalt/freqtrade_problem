@@ -1,5 +1,5 @@
 from freqtrade.strategy.interface import IStrategy, logger
-from freqtrade.strategy import IntParameter, DecimalParameter
+from freqtrade.strategy import IntParameter, DecimalParameter, informative
 from freqtrade.optimize.space import SKDecimal
 from pandas import DataFrame
 import pandas_ta as ta
@@ -17,9 +17,25 @@ class MyStrategy(IStrategy):
     position_adjustment_enable = True
     stake_amount = 'unlimited'
 
+    @informative('8h', candle_type='funding_rate')
+    def populate_indicators_funding_rates(self, dataframe: DataFrame, metadata: dict):
+        # Adding funding rates to have them in populate_indicators that are not from the box.
+
+        if len(dataframe) > 0:
+            dataframe['funding_rate'] = dataframe['open'].shift(-1)
+            dataframe['funding_rate'] = dataframe['funding_rate'].fillna(0)
+        return dataframe
+
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
-        price_change = df['close'].pct_change()
-        df['pump'] = price_change > 0.03
+        price_change = df['close'].pct_change().fillna(0)
+        df['pump_close'] = df['close'].where(
+            (price_change > 0.3) &
+            (df['funding_rate_8h'] > -0.00086)
+        )
+
+        # Historical min over e.g. last 360 days (assuming 5m candles: 360d * 24h * 12):
+        lookback = 360 * 24 * 12
+        df['hist_min'] = df['low'].rolling(lookback, min_periods=1).min()
 
         return df
 
@@ -38,7 +54,7 @@ class MyStrategy(IStrategy):
 
     def custom_roi(self, pair: str, trade, current_time, trade_duration: int,
                    entry_tag: str | None, side: str, **kwargs) -> float | None:
-        profit_ratio = 1 / trade.open_rate
+        profit_ratio = 0.3
         return profit_ratio
 
 

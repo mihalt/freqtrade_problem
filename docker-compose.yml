@@ -13,10 +13,9 @@ services:
     restart: unless-stopped
     volumes:
       - "./user_data:/freqtrade/user_data"
-      - "./exchange_utils.py:/freqtrade/exchange/exchange_utils.py"
 
     command: >
-      freqtrade backtesting
+      freqtrade recursive-analysis
       --config /freqtrade/user_data/config.json
       --strategy MyStrategy
-      --timerange=20240101-20250707
+      --timerange=20250101-20250820
