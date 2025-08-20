@@ -20,7 +20,7 @@ class MyStrategy(IStrategy):
     @informative('8h', candle_type='funding_rate')
     def populate_indicators_funding_rates(self, dataframe: DataFrame, metadata: dict):
         # Adding funding rates to have them in populate_indicators that are not from the box.
-
+        dataframe['funding_rate'] = 0
         if len(dataframe) > 0:
             dataframe['funding_rate'] = dataframe['open'].shift(-1)
             dataframe['funding_rate'] = dataframe['funding_rate'].fillna(0)
@@ -29,7 +29,7 @@ class MyStrategy(IStrategy):
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         price_change = df['close'].pct_change().fillna(0)
         df['pump_close'] = df['close'].where(
-            (price_change > 0.3) &
+            (price_change > 0.03) &
             (df['funding_rate_8h'] > -0.00086)
         )
 
@@ -43,7 +43,7 @@ class MyStrategy(IStrategy):
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         df['enter_short'] = 0
         df.loc[
-            (df['pump']),
+            (df['pump_close'].notnull()),
             'enter_short'] = 1
 
         return df
@@ -54,7 +54,7 @@ class MyStrategy(IStrategy):
 
     def custom_roi(self, pair: str, trade, current_time, trade_duration: int,
                    entry_tag: str | None, side: str, **kwargs) -> float | None:
-        profit_ratio = 0.3
+        profit_ratio = 0.03
         return profit_ratio
 
 
